@@ -8,43 +8,43 @@
 
 
 void update(){
-		char input_buffer[128];
+		char c_buffer[128];
 		int i_buffer = 0;
 		// Get config data
 		struct scftp_data p_data;
-		json_to_scftp_data(&p_data ,read_file_to_json(get_default_config_file_location()));
-		fprintf(stdout, "[ --- ]   Getting Config Data from %s\n", get_default_config_file_location);
-		print_scftp_data_struct(&p_data);
+		JsonToScftpStruct(&p_data ,ReadToJson(GetDefaultFileLocation()));
+		fprintf(stdout, "[ --- ]   Getting Config Data from %s\n", GetDefaultFileLocation);
+		PrintScftpStruct(&p_data);
 		while(1){
-				input_buffer[0] = '\0';
+				c_buffer[0] = '\0';
 				fprintf(stdout, "name : %s\nupdate to =>", p_data.NAME);
-				fgets(input_buffer, 64, stdin);
-				if(strlen(input_buffer) <= 1){
+				fgets(c_buffer, 64, stdin);
+				if(strlen(c_buffer) <= 1){
 						printf("Name Cannot be empty\n");
 				}else{
-						strcpy(p_data.NAME, input_buffer);
+						strcpy(p_data.NAME, c_buffer);
 						printf("%s", p_data.NAME);
 						break;
 				}
 		}
 		while(1){
 				// set input buffer to empty
-				input_buffer[0] = '\0';
+				c_buffer[0] = '\0';
 				fprintf(stdout, "root : %s\nupdate to =>", p_data.ROOT);
-				fgets(input_buffer, 128, stdin);
+				fgets(c_buffer, 128, stdin);
 
 				// check input buffer if it is empty
-				if(strlen(input_buffer) <= 1){
+				if(strlen(c_buffer) <= 1){
 						printf("Root Directory cannot be empty\n");
 				}else{
 						// remove \n from input buffer
-						input_buffer[strlen(input_buffer)-1] = '\0';
-						if(check_if_folder_exists(input_buffer) == NOT_EXIST){
+						c_buffer[strlen(c_buffer)-1] = '\0';
+						if(CheckFolderExist(c_buffer) == NOT_EXIST){
 								printf("Please provide valid directory path\n");
 						}
 						else{
-								input_buffer[strlen(input_buffer)-1] = '\n';
-								strcpy(p_data.ROOT, input_buffer);
+								c_buffer[strlen(c_buffer)-1] = '\n';
+								strcpy(p_data.ROOT, c_buffer);
 								printf("%s", p_data.ROOT);
 								break;
 						}
@@ -135,38 +135,38 @@ void update(){
 
 		cJSON* j_data;
 		// create json handle from scftp struct
-		j_data = create_server_data(p_data.NAME, p_data.ROOT, p_data.PORT, p_data.ENCRYPTION_LEVEL, p_data.MAX_CONNECTIONS, p_data.BUFFER_SIZE, p_data.AUTHENTICATION);
+		j_data = CreateJsonHandle(p_data.NAME, p_data.ROOT, p_data.PORT, p_data.ENCRYPTION_LEVEL, p_data.MAX_CONNECTIONS, p_data.BUFFER_SIZE, p_data.AUTHENTICATION);
 
-		write_json_to_file(j_data, get_default_config_file_location());
+		write_json_to_file(j_data, GetDefaultFileLocation());
 }
 
 int main(){
 
-		check_if_folder_exists("/hme/teja/");
+		CheckFolderExist("/hme/teja/");
 		// set default config locations
-		set_defaults();
+		SetLocationDefaults();
 		
 		// check if config location exists
 		printf("[ --- ]   Checking default config location exists\n");
 		// if doesn't create one
-		if(check_if_folder_exists(get_default_config_folder_location()) == NOT_EXIST){
-				create_folder(get_default_config_folder_location());
+		if(CheckFolderExist(GetDefaultFolderLocation()) == NOT_EXIST){
+				CreateFolder(GetDefaultFolderLocation());
 		}
 
 		// check if config file exists
 		printf("[ --- ]   Checking default config file exists\n");
 		// if doesn't create one
-		if(check_if_file_exists(get_default_config_file_location()) == NOT_EXIST){
+		if(CheckFileExist(GetDefaultFileLocation()) == NOT_EXIST){
 				printf("[ ERROR ] Config file not found\n[ --- ]   Creating Default config file\n");
-				create_default_config_file(get_default_config_file_location());
+				CreateDefaultConfigFile(GetDefaultFileLocation());
 		}
 		// if exists check if it is empty
 		// and fill with default data
 		else{
 				printf("[ --- ]   Checking if config file is empty\n");
-				if(check_if_file_is_empty(get_default_config_file_location()) == EMPTY){
+				if(CheckFileEmpty(GetDefaultFileLocation()) == EMPTY){
 						printf("[ ERROR ] Config file is empty\n[ --- ]   Writing Default config data to file\n");
-						create_default_config_file(get_default_config_file_location());
+						CreateDefaultConfigFile(GetDefaultFileLocation());
 				}
 		}
 
@@ -182,8 +182,8 @@ int main(){
 		if(strcmp(arr_c_command, "print\n") == 0){
 				// read config file and print its content
 				struct scftp_data p_data;
-				json_to_scftp_data(&p_data ,read_file_to_json(get_default_config_file_location()));
-				print_scftp_data_struct(&p_data);
+				JsonToScftpStruct(&p_data ,ReadToJson(GetDefaultFileLocation()));
+				PrintScftpStruct(&p_data);
 				continue;
 		}
 
