@@ -39,7 +39,7 @@ void CreateDefaultConfigFile(const char* config_file_path){
 		free(temp_json_string);
 }
 
-void write_json_to_file(cJSON* json_object, const char* config_file_path){
+void JsonToFile(cJSON* json_object, const char* config_file_path){
 		char* json_string = cJSON_PrintUnformatted(json_object);
 		FILE* f_fd = fopen(config_file_path, "w");
 		if(f_fd == NULL){

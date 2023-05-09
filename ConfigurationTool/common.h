@@ -28,7 +28,7 @@ char* GetDefaultFileLocation();
 char* GetDefaultFolderLocation();
 
 void CreateDefaultConfigFile(const char* config_file_path);
-void write_json_to_file(cJSON* json_object, const char* config_file_path);
+void JsonToFile(cJSON* json_object, const char* config_file_path);
 cJSON* ReadToJson(const char* config_file_path);
 void JsonToScftpStruct(struct scftp_data* s_data, cJSON* j_data);
 cJSON* CreateJsonHandle(char* s_name, char* s_root, int s_port,

@@ -137,7 +137,7 @@ void update(){
 		// create json handle from scftp struct
 		j_data = CreateJsonHandle(p_data.NAME, p_data.ROOT, p_data.PORT, p_data.ENCRYPTION_LEVEL, p_data.MAX_CONNECTIONS, p_data.BUFFER_SIZE, p_data.AUTHENTICATION);
 
-		write_json_to_file(j_data, GetDefaultFileLocation());
+		JsonToFile(j_data, GetDefaultFileLocation());
 }
 
 int main(){
