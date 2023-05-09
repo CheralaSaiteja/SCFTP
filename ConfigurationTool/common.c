@@ -2,19 +2,19 @@
 #include <unistd.h>
 #include <dirent.h>
 
-char* get_default_config_folder_location(){
+char* GetDefaultFolderLocation(){
 		return DEFAULT_CONFIG_FOLDER_LOCATION;
 }
-char* get_default_config_file_location(){
+char* GetDefaultFileLocation(){
 		return DEFAULT_CONFIG_FILE_LOCATION;
 }
 
 
-void print_defaults(){
+void PrintDefaultLocations(){
 		printf(" [ --- ]   folder %s\nfile %s\n", DEFAULT_CONFIG_FOLDER_LOCATION, DEFAULT_CONFIG_FILE_LOCATION);
 }
 
-void create_default_config_file(const char* config_file_path){
+void CreateDefaultConfigFile(const char* config_file_path){
 		cJSON* temp_config = cJSON_CreateObject();
 
 		cJSON_AddStringToObject(temp_config, "name", DEFAULT_SERVER_NAME);
@@ -50,7 +50,7 @@ void write_json_to_file(cJSON* json_object, const char* config_file_path){
 		fclose(f_fd);
 		free(json_string);
 }
-cJSON* read_file_to_json(const char* config_file_path){
+cJSON* ReadToJson(const char* config_file_path){
 
 		FILE* fd = fopen(config_file_path, "r");
 		if(fd == NULL){
@@ -71,7 +71,7 @@ cJSON* read_file_to_json(const char* config_file_path){
 		}
 		return j_file;
 }
-void json_to_scftp_data(struct scftp_data* s_data, cJSON* j_data){
+void JsonToScftpStruct(struct scftp_data* s_data, cJSON* j_data){
 
 	strcpy(s_data->NAME, cJSON_GetObjectItem(j_data, "name")->valuestring);	
 	strcpy(s_data->ROOT, cJSON_GetObjectItem(j_data, "root")->valuestring);	
@@ -82,7 +82,7 @@ void json_to_scftp_data(struct scftp_data* s_data, cJSON* j_data){
 	s_data->BUFFER_SIZE = cJSON_GetObjectItem(j_data, "buffer size")->valueint;
 
 }
-cJSON* create_server_data( char* s_name, char* s_root, int s_port,
+cJSON* CreateJsonHandle( char* s_name, char* s_root, int s_port,
 		int s_encryption, int s_max_connections, int s_buffer_size, int s_authentication){
 
 
@@ -97,13 +97,13 @@ cJSON* create_server_data( char* s_name, char* s_root, int s_port,
 
 		return json_handle;
 }
-void print_scftp_data_struct(struct scftp_data* s_data){
+void PrintScftpStruct(struct scftp_data* s_data){
 		fprintf(stdout, "name : %s\nroot : %s\nport : %d\nencryption : %d\nmax connections : %d\n"
 						"authentication : %d\nbuffer size : %d\n",
 						s_data->NAME, s_data->ROOT, s_data->PORT, s_data->ENCRYPTION_LEVEL,
 						s_data->MAX_CONNECTIONS, s_data->AUTHENTICATION, s_data->BUFFER_SIZE);
 }
-void set_defaults(){
+void SetLocationDefaults(){
 		strcat(DEFAULT_ROOT_DIRECTORY, getenv("HOME"));
 		strcat(DEFAULT_ROOT_DIRECTORY, "/");
 		strcat(DEFAULT_ROOT_DIRECTORY, "SCFTP/");

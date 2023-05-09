@@ -23,17 +23,17 @@ struct scftp_data{
 		int PORT, AUTHENTICATION, ENCRYPTION_LEVEL, BUFFER_SIZE, MAX_CONNECTIONS;
 };
 
-void print_defaults();
-char* get_default_config_file_location();
-char* get_default_config_folder_location();
+void PrintDefaultLocations();
+char* GetDefaultFileLocation();
+char* GetDefaultFolderLocation();
 
-void create_default_config_file(const char* config_file_path);
+void CreateDefaultConfigFile(const char* config_file_path);
 void write_json_to_file(cJSON* json_object, const char* config_file_path);
-cJSON* read_file_to_json(const char* config_file_path);
-void json_to_scftp_data(struct scftp_data* s_data, cJSON* j_data);
-cJSON* create_server_data(char* s_name, char* s_root, int s_port,
+cJSON* ReadToJson(const char* config_file_path);
+void JsonToScftpStruct(struct scftp_data* s_data, cJSON* j_data);
+cJSON* CreateJsonHandle(char* s_name, char* s_root, int s_port,
 		int s_encryption, int s_max_connections, int s_buffer_size, int s_authentication);
-void print_scftp_data_struct(struct scftp_data* s_data);
-void set_defaults();
+void PrintScftpStruct(struct scftp_data* s_data);
+void SetLocationDefaults();
 
 #endif

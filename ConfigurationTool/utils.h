@@ -11,12 +11,12 @@
 #define NOT_EMPTY 1
 #define EMPTY 0
 
-u_int8_t check_if_file_exists(const char* file_name);
-u_int8_t check_if_folder_exists(const char* folder_name);
+u_int8_t CheckFileExist(const char* file_name);
+u_int8_t CheckFolderExist(const char* folder_name);
 
-u_int8_t check_if_file_is_empty(const char* file_name);
+u_int8_t CheckFileEmpty(const char* file_name);
 
-void create_folder(const char* folder_path);
-void create_file(const char* file_name);
+void CreateFolder(const char* folder_path);
+void CreateFile(const char* file_name);
 
 #endif
