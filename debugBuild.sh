@@ -6,4 +6,3 @@ cd ConfigurationTool
 echo "Building Server"
 cd ../Server/
 ./debugBuild.sh
-
