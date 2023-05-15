@@ -6,3 +6,7 @@ cd ConfigurationTool
 echo "Building Server"
 cd ../Server/
 ./debugBuild.sh
+
+echo "Building UserMan"
+cd ../UserMan/
+./debugBuild.sh
