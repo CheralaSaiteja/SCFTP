@@ -1,12 +1,12 @@
 #!/bin/sh
-echo "Building ConfigTool"
-cd ConfigurationTool
-./debugBuild.sh
 
-echo "Building Server"
-cd ../Server/
-./debugBuild.sh
 
-echo "Building UserMan"
-cd ../UserMan/
-./debugBuild.sh
+echo "Building Project"
+
+cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=off -S . -B build/
+cd build/
+make
+
+echo "Moving Executables"
+mkdir -p ../bin/Debug ../bin/Release
+mv ConfigTool UserMan Server Client ../bin/Debug/
