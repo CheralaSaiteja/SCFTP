@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(SCFTP)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 17)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_C_STANDARD 17)
 
 set(SERVER_INC Server/include/)
 set(CLIENT_INC Client/include/)
@@ -13,6 +13,7 @@ add_subdirectory(deps/cJSON)
 
 # server src
 file(GLOB SERVER_SRC 
+    ConfigTool/src/common.c
     Server/src/*.c 
     Server/src/*.cpp )
 
@@ -41,13 +42,13 @@ add_executable(UserMan ${USERMAN_SRC})
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 # include directories
-target_include_directories(Server PUBLIC ${SERVER_INC})
+target_include_directories(Server PUBLIC ${SERVER_INC} deps/cJSON/)
 target_include_directories(Client PUBLIC ${CLIENT_INC})
 target_include_directories(ConfigTool PUBLIC ${CONFIGTOOL_INC} deps/cJSON/)
 target_include_directories(UserMan PUBLIC ${USERMAN_INC})
 
 # link libraries
-# target_link_libraries(Server PUBLIC ${SERVER_INC})
+target_link_libraries(Server PUBLIC cjson)
 # target_link_libraries(Client PUBLIC ${CLIENT_INC})
 target_link_libraries(ConfigTool PUBLIC cjson) 
-target_link_libraries(UserMan PUBLIC mysqlclient)
+target_link_libraries(UserMan PUBLIC mysqlcppconn mariadbclient)

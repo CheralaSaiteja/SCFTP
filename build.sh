@@ -9,5 +9,5 @@ make
 
 echo "Moving Executables"
 
-mkdir -p ../bin/Debug bin/Release
+mkdir -p ../bin/Debug ../bin/Release
 mv ConfigTool UserMan Server Client ../bin/Release/
