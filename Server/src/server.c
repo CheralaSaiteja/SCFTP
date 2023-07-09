@@ -2,16 +2,16 @@
 #include "../../ConfigTool/include/common.h"
 #include "../../ConfigTool/include/utils.h"
 #include <bits/pthreadtypes.h>
-#include <pthread.h>
 #include <dirent.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <mariadb/mysql.h>
 struct scftp_data data;
 
 // create
@@ -120,7 +120,77 @@ void *threadFunction(void *arg) {
 
   return NULL;
 }
-uint8_t validateCredentials(char *username, char *password) { return 1; }
+uint8_t validateCredentials(char *credentials) {
+  char username[128];
+  char password[128];
+  uint8_t exist;
+
+  // Get the first token
+  char *token = strtok(credentials, " ");
+
+  if (token != NULL) {
+    strncpy(username, token, sizeof(username) - 1);
+    username[sizeof(username) - 1] = '\0';
+
+    token = strtok(NULL, " ");
+
+    if (token != NULL) {
+      strncpy(password, token, sizeof(password) - 1);
+      password[sizeof(password) - 1] = '\0';
+    }
+  }
+  {
+    MYSQL *conn;
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+
+    conn = mysql_init(NULL);
+    if (conn == NULL) {
+      printf("Failed to initialize MySQL connection.\n");
+      return 1;
+    }
+
+    if (mysql_real_connect(conn, "localhost", "root", "Teja@123", "scftp", 0,
+                           NULL, 0) == NULL) {
+      printf("Failed to connect to the database: %s\n", mysql_error(conn));
+      mysql_close(conn);
+      return -1;
+    }
+
+    // const char *query = "SELECT * FROM users WHERE username = 'your_username'
+    // "
+    //                     "AND password = 'your_password';";
+    char query[1024];
+    strcpy(query, "SELECT * FROM users WHERE username = '");
+    strcpy(query, username);
+    strcpy(query, "' AND password = '");
+    strcpy(query, password);
+    strcpy(query, "';");
+    if (mysql_query(conn, query) != 0) {
+      printf("Failed to execute query: %s\n", mysql_error(conn));
+      mysql_close(conn);
+      return -1;
+    }
+
+    result = mysql_store_result(conn);
+    if (result == NULL) {
+      printf("Failed to retrieve result set: %s\n", mysql_error(conn));
+      mysql_close(conn);
+      return -1;
+    }
+    exist = mysql_num_rows(result);
+    if (exit > 1) {
+      printf("User exists with the provided credentials.\n");
+    } else {
+      printf("User does not exist or the credentials are incorrect.\n");
+    }
+
+    mysql_free_result(result);
+    mysql_close(conn);
+  }
+
+  return exist;
+}
 
 int main(int argc, char **argv) {
   // get defaults
@@ -153,10 +223,9 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
     memset(authBuffer, '\0', 512);
+    // credentials
     read(newSock_fd, authBuffer, 512);
-    // get username and password from auth buffer
-    fprintf(stdout, "%s\n", authBuffer);
-    if (validateCredentials(NULL, NULL) == 1) {
+    if (validateCredentials(authBuffer) > 1) {
       fprintf(stdout,
               "User authentication: SUCCESS. Establishing a connection.\n");
       strcpy(authBuffer, "AUTH_OK");
