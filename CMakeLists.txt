@@ -14,11 +14,14 @@ add_subdirectory(deps/cJSON)
 # server src
 file(GLOB SERVER_SRC 
     ConfigTool/src/common.c
+    ConfigTool/src/utils.c
+    Client/src/utils.c
     Server/src/*.c 
     Server/src/*.cpp )
 
 # client src
 file(GLOB CLIENT_SRC 
+    ConfigTool/src/utils.c
     Client/src/*.c 
     Client/src/*.cpp)
 
@@ -48,7 +51,7 @@ target_include_directories(ConfigTool PUBLIC ${CONFIGTOOL_INC} deps/cJSON/)
 target_include_directories(UserMan PUBLIC ${USERMAN_INC})
 
 # link libraries
-target_link_libraries(Server PUBLIC cjson)
+target_link_libraries(Server PUBLIC cjson pthread)
 # target_link_libraries(Client PUBLIC ${CLIENT_INC})
 target_link_libraries(ConfigTool PUBLIC cjson) 
 target_link_libraries(UserMan PUBLIC mysqlcppconn mariadbclient)

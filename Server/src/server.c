@@ -1,3 +1,8 @@
+#include "../../Client/src/utils.h"
+#include "../../ConfigTool/include/common.h"
+#include "../../ConfigTool/include/utils.h"
+#include <bits/pthreadtypes.h>
+#include <pthread.h>
 #include <dirent.h>
 #include <netinet/in.h>
 #include <stdint.h>
@@ -6,8 +11,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
-#include "../../ConfigTool/include/common.h"
 
 struct scftp_data data;
 
@@ -68,19 +71,55 @@ void handle_connection(int clientSock_fd, int buffer_size) {
 
     if (strcmp(buffer, "exit") == 0) {
       close_connection(clientSock_fd);
+      printf("Closed a connection\n");
       break;
     }
 
     if (strcmp(buffer, "ls") == 0) {
-      strcpy(buffer, "listing files");
+      printf("Command : ls\n");
       listFiles(buffer);
-      printf("%s\n", buffer);
+      // printf("%s\n", buffer);
       send(clientSock_fd, buffer, buffer_size, 0);
+    }
+    if (strcmp(buffer, "pushFile") == 0) {
+      read(clientSock_fd, buffer, buffer_size);
+      if (strcmp(buffer, "EXIST") == 0) {
+        recvFile(clientSock_fd, data.ROOT, buffer, buffer_size);
+      }
+    }
+    if (strcmp(buffer, "getFile") == 0) {
+      // read filename
+      read(clientSock_fd, buffer, buffer_size);
+
+      char *tmpStr = malloc(sizeof(char) * buffer_size);
+
+      // check if file exist
+      strcpy(tmpStr, data.ROOT);
+      strcat(tmpStr, "/");
+      strcat(tmpStr, buffer);
+      if (CheckFileExist(tmpStr) == 1) {
+        strcpy(buffer, "EXIST");
+        send(clientSock_fd, buffer, buffer_size, 0);
+        // send that file
+        sendFile(clientSock_fd, tmpStr, buffer, buffer_size);
+      } else {
+        strcpy(buffer, "NOT_EXIST");
+        send(clientSock_fd, buffer, buffer_size, 0);
+      }
+      free(tmpStr);
     }
   }
   free(buffer);
 }
+void *threadFunction(void *arg) {
+  int *params = (int *)arg;
+  int clientSock_fd = params[0];
+  int buffer_size = params[1];
 
+  handle_connection(clientSock_fd, buffer_size);
+
+  return NULL;
+}
 uint8_t validateCredentials(char *username, char *password) { return 1; }
 
 int main(int argc, char **argv) {
@@ -90,52 +129,73 @@ int main(int argc, char **argv) {
   PrintScftpStruct(&data);
 
   // main start
-  int sock_fd, newSock_fd;
+  char authBuffer[512];
+  int sock_fd, newSock_fd, sock_addr_len;
   struct sockaddr_in sock_addr;
   sock_fd = create_connection("127.0.0.1", data.PORT, sock_addr);
 
   sock_addr.sin_family = AF_INET;
   sock_addr.sin_addr.s_addr = INADDR_ANY;
   sock_addr.sin_port = htons(8008);
-  int sock_addr_len = sizeof(sock_addr);
+  sock_addr_len = sizeof(sock_addr);
 
   if (listen(sock_fd, sock_addr_len) < 0) {
     perror("listen failed");
     exit(EXIT_FAILURE);
   }
-
-  // authnetication buffer
-  char autheBuffer[512];
+  // // create threads
+  // pthread_t threads[data.MAX_CONNECTIONS];
+  // int activeConnections = 0;
   while (1) {
     if ((newSock_fd = accept(sock_fd, (struct sockaddr *)&sock_addr,
                              (socklen_t *)&sock_addr_len)) < 0) {
       perror("accept");
       exit(EXIT_FAILURE);
     }
-    memset(autheBuffer, '\0', 512);
-    read(newSock_fd, autheBuffer, 512);
+    memset(authBuffer, '\0', 512);
+    read(newSock_fd, authBuffer, 512);
     // get username and password from auth buffer
-    fprintf(stdout, "%s\n", autheBuffer);
+    fprintf(stdout, "%s\n", authBuffer);
     if (validateCredentials(NULL, NULL) == 1) {
-      fprintf(stdout, "user authenticated\n");
-      strcpy(autheBuffer, "AUTH_OK");
-      send(newSock_fd, autheBuffer, sizeof(autheBuffer), 0);
+      fprintf(stdout,
+              "User authentication: SUCCESS. Establishing a connection.\n");
+      strcpy(authBuffer, "AUTH_OK");
+      send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
 
       // send details
       {
-        snprintf(autheBuffer, sizeof(autheBuffer), "%d", data.ENCRYPTION_LEVEL);
-        send(newSock_fd, autheBuffer, sizeof(autheBuffer), 0);
+        snprintf(authBuffer, sizeof(authBuffer), "%d", data.ENCRYPTION_LEVEL);
+        send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
 
-        snprintf(autheBuffer, sizeof(autheBuffer), "%d", data.BUFFER_SIZE);
-        send(newSock_fd, autheBuffer, sizeof(autheBuffer), 0);
+        snprintf(authBuffer, sizeof(authBuffer), "%d", data.BUFFER_SIZE);
+        send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
       }
-
+      // if (activeConnections + 1 == data.MAX_CONNECTIONS) {
+      //   printf("FULL\n");
+      //   strcpy(authBuffer, "FULL");
+      //   send(sock_fd, authBuffer, sizeof(authBuffer), 0);
+      // } else {
+      //   printf("NOT_FULL\n");
+      //   strcpy(authBuffer, "NOT_FULL");
+      //   send(sock_fd, authBuffer, sizeof(authBuffer), 0);
+      //   int threadParams[2] = {newSock_fd, data.BUFFER_SIZE * 512};
+      //   pthread_create(&threads[activeConnections], NULL, threadFunction,
+      //                  (void *)threadParams);
+      // }
       handle_connection(newSock_fd, data.BUFFER_SIZE * 512);
     } else {
-      fprintf(stdout, "a user tried authenticate\n");
-      strcpy(autheBuffer, "AUTH_FAIL");
-      send(newSock_fd, autheBuffer, sizeof(autheBuffer), 0);
+      fprintf(stdout, "User authenticate : FAILED\n");
+      strcpy(authBuffer, "AUTH_FAIL");
+      send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
     }
+    // // Check and join completed threads
+    // for (int i = 0; i < activeConnections; i++) {
+    //   int result = pthread_tryjoin_np(threads[i], NULL);
+    //   if (result == 0) {
+    //     printf("Thread %d has completed.\n", i + 1);
+    //     pthread_join(threads[i], NULL);
+    //   }
+    // }
   }
   close_connection(sock_fd);
   return 0;
