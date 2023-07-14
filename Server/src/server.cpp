@@ -1,15 +1,17 @@
 #include "../../Client/src/utils.hpp"
-#include "../../ConfigTool/include/utils.hpp"
 #include "../../ConfigTool/include/common.hpp"
+#include "../../ConfigTool/include/utils.hpp"
 #include <dirent.h>
+#include <list>
 #include <mysql/mysql.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <thread>
 #include <unistd.h>
 u_int8_t sCheckFileExist(const char *file_name) {
   if (access(file_name, F_OK) != -1) {
@@ -122,13 +124,36 @@ void *handle_connection(void *Args) {
     }
   }
   free(buffer);
+  return NULL;
 }
-
+std::thread *threads;
+uint8_t isAllocated = false;
+HandleConnectionArgs *args;
+int threadIndex = 0;
 void HanldleThreads(int sockFd, int bufferSize) {
-  HandleConnectionArgs args;
-  args.sockFd = sockFd;
-  args.bufferSize = bufferSize;
-  handle_connection((void *)&args);
+  if (!isAllocated) {
+    threads = (std::thread *)malloc(data.MAX_CONNECTIONS * sizeof(std::thread));
+    args = (HandleConnectionArgs *)malloc(sizeof(HandleConnectionArgs) *
+                                          data.MAX_CONNECTIONS);
+    isAllocated = true;
+  }
+  if (threadIndex == data.MAX_CONNECTIONS - 1) {
+    return;
+  }
+  // HandleConnectionArgs args;
+  // args.sockFd = sockFd;
+  // args.bufferSize = bufferSize;
+  // handle_connection((void *)&args);
+  // check if any threads completed the work
+  args[threadIndex].sockFd = sockFd;
+  args[threadIndex].bufferSize = bufferSize;
+  new (&threads[threadIndex])
+      std::thread(handle_connection, &args[threadIndex]);
+  threadIndex++;
+  // for (int i = 0; i < threadIndex; i++) {
+  //   if (threads[i].joinable())
+  //     threads[i].join();
+  // }
 }
 uint8_t validateCredentials(char *credentials) {
   char username[128];
@@ -178,8 +203,6 @@ uint8_t validateCredentials(char *credentials) {
     strcat(query, password);
     strcat(query, "';");
 
-    printf("%s\n", query);
-
     if (mysql_query(conn, query) != 0) {
       printf("Failed to execute query: %s\n", mysql_error(conn));
       mysql_close(conn);
@@ -227,9 +250,6 @@ int main(int argc, char **argv) {
     perror("listen failed");
     exit(EXIT_FAILURE);
   }
-  // create threads
-  pthread_t threads[data.MAX_CONNECTIONS];
-  int activeConnections = 0;
   while (1) {
     if ((newSock_fd = accept(sock_fd, (struct sockaddr *)&sock_addr,
                              (socklen_t *)&sock_addr_len)) < 0) {
@@ -259,6 +279,9 @@ int main(int argc, char **argv) {
       strcpy(authBuffer, "AUTH_FAIL");
       send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
     }
+  }
+  if (isAllocated) {
+    free(threads);
   }
   close_connection(sock_fd);
   return 0;
