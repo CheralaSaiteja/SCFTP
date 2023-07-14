@@ -1,7 +1,8 @@
+extern "C" {
 #include "../../Client/src/utils.h"
-#include "../../ConfigTool/include/common.h"
 #include "../../ConfigTool/include/utils.h"
-#include <bits/pthreadtypes.h>
+#include "../../ConfigTool/include/common.h"
+}
 #include <dirent.h>
 #include <mysql/mysql.h>
 #include <netinet/in.h>
@@ -13,7 +14,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 struct scftp_data data;
-
+struct HandleConnectionArgs {
+  int sockFd;
+  int bufferSize;
+};
 // create
 int create_connection(const char *address, int port, struct sockaddr_in addr) {
   int sock_fd;
@@ -64,13 +68,14 @@ void listFiles(char *buffer) {
 }
 
 // handle
-void handle_connection(int clientSock_fd, int buffer_size) {
-  char *buffer = malloc(sizeof(char) * buffer_size);
+void *handle_connection(void *Args) {
+  struct HandleConnectionArgs *hArgs = (struct HandleConnectionArgs *)Args;
+  char *buffer = (char *)malloc(sizeof(char) * hArgs->bufferSize);
   while (1) {
-    read(clientSock_fd, buffer, buffer_size);
+    read(hArgs->sockFd, buffer, hArgs->bufferSize);
 
     if (strcmp(buffer, "exit") == 0) {
-      close_connection(clientSock_fd);
+      close_connection(hArgs->sockFd);
       printf("Closed a connection\n");
       break;
     }
@@ -79,46 +84,44 @@ void handle_connection(int clientSock_fd, int buffer_size) {
       printf("Command : ls\n");
       listFiles(buffer);
       // printf("%s\n", buffer);
-      send(clientSock_fd, buffer, buffer_size, 0);
+      send(hArgs->sockFd, buffer, hArgs->bufferSize, 0);
     }
     if (strcmp(buffer, "pushFile") == 0) {
-      read(clientSock_fd, buffer, buffer_size);
+      read(hArgs->sockFd, buffer, hArgs->bufferSize);
       if (strcmp(buffer, "EXIST") == 0) {
-        recvFile(clientSock_fd, data.ROOT, buffer, buffer_size);
+        recvFile(hArgs->sockFd, data.ROOT, buffer, hArgs->bufferSize);
       }
     }
     if (strcmp(buffer, "getFile") == 0) {
       // read filename
-      read(clientSock_fd, buffer, buffer_size);
+      read(hArgs->sockFd, buffer, hArgs->bufferSize);
 
-      char *tmpStr = malloc(sizeof(char) * buffer_size);
+      char *tmpStr = (char *)malloc(sizeof(char) * hArgs->bufferSize);
 
       // check if file exist
       strcpy(tmpStr, data.ROOT);
       strcat(tmpStr, "/");
       strcat(tmpStr, buffer);
-      if (CheckFileExist(tmpStr) == 1) {
+      if (CheckFileExist(&tmpStr) == 1) {
         strcpy(buffer, "EXIST");
-        send(clientSock_fd, buffer, buffer_size, 0);
+        send(hArgs->sockFd, buffer, hArgs->bufferSize, 0);
         // send that file
-        sendFile(clientSock_fd, tmpStr, buffer, buffer_size);
+        sendFile(hArgs->sockFd, tmpStr, buffer, hArgs->bufferSize);
       } else {
         strcpy(buffer, "NOT_EXIST");
-        send(clientSock_fd, buffer, buffer_size, 0);
+        send(hArgs->sockFd, buffer, hArgs->bufferSize, 0);
       }
       free(tmpStr);
     }
   }
   free(buffer);
 }
-void *threadFunction(void *arg) {
-  int *params = (int *)arg;
-  int clientSock_fd = params[0];
-  int buffer_size = params[1];
 
-  handle_connection(clientSock_fd, buffer_size);
-
-  return NULL;
+void HanldleThreads(int sockFd, int bufferSize){
+  HandleConnectionArgs args;
+  args.sockFd = sockFd;
+  args.bufferSize = bufferSize;
+  handle_connection((void*)&args);
 }
 uint8_t validateCredentials(char *credentials) {
   char username[128];
@@ -157,7 +160,8 @@ uint8_t validateCredentials(char *credentials) {
       return -1;
     }
 
-    // const char *query = "SELECT * FROM users WHERE username = 'your_username'
+    // const char *query = "SELECT * FROM users WHERE username =
+    // 'your_username'
     // "
     //                     "AND password = 'your_password';";
     char query[1024];
@@ -216,9 +220,9 @@ int main(int argc, char **argv) {
     perror("listen failed");
     exit(EXIT_FAILURE);
   }
-  // // create threads
-  // pthread_t threads[data.MAX_CONNECTIONS];
-  // int activeConnections = 0;
+  // create threads
+  pthread_t threads[data.MAX_CONNECTIONS];
+  int activeConnections = 0;
   while (1) {
     if ((newSock_fd = accept(sock_fd, (struct sockaddr *)&sock_addr,
                              (socklen_t *)&sock_addr_len)) < 0) {
@@ -242,32 +246,12 @@ int main(int argc, char **argv) {
         snprintf(authBuffer, sizeof(authBuffer), "%d", data.BUFFER_SIZE);
         send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
       }
-      // if (activeConnections + 1 == data.MAX_CONNECTIONS) {
-      //   printf("FULL\n");
-      //   strcpy(authBuffer, "FULL");
-      //   send(sock_fd, authBuffer, sizeof(authBuffer), 0);
-      // } else {
-      //   printf("NOT_FULL\n");
-      //   strcpy(authBuffer, "NOT_FULL");
-      //   send(sock_fd, authBuffer, sizeof(authBuffer), 0);
-      //   int threadParams[2] = {newSock_fd, data.BUFFER_SIZE * 512};
-      //   pthread_create(&threads[activeConnections], NULL, threadFunction,
-      //                  (void *)threadParams);
-      // }
-      handle_connection(newSock_fd, data.BUFFER_SIZE * 512);
+      HanldleThreads(newSock_fd, data.BUFFER_SIZE * 512);
     } else {
       fprintf(stdout, "User authenticate : FAILED\n");
       strcpy(authBuffer, "AUTH_FAIL");
       send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
     }
-    // // Check and join completed threads
-    // for (int i = 0; i < activeConnections; i++) {
-    //   int result = pthread_tryjoin_np(threads[i], NULL);
-    //   if (result == 0) {
-    //     printf("Thread %d has completed.\n", i + 1);
-    //     pthread_join(threads[i], NULL);
-    //   }
-    // }
   }
   close_connection(sock_fd);
   return 0;
