@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "utils.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +56,7 @@ void sendFile(int sockfd, char *filename, char *buf, int buf_size) {
   // check if filename is full path
   // if full path
   // keep only filename
+
   char *processedFileName = checkiffullpath(filename);
 
   // Send the processed file name
@@ -90,10 +91,12 @@ void recvFile(int sock_fd, char *root, char *buf, int buf_size) {
   char *tStr;
   if (root != NULL) {
     // Open the file for writing
-    tStr = malloc(sizeof(char) * buf_size);
+    tStr = (char *)malloc(sizeof(char) * buf_size);
     strcpy(tStr, root);
     strcat(tStr, "/");
     strcat(tStr, buf);
+    tStr[strlen(tStr) - 1] = '\0';
+    printf("%s\t%s\n", buf, tStr);
     file = fopen(tStr, "wb");
     if (file == NULL) {
       perror("Error opening file");

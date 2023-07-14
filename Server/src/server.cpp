@@ -1,8 +1,6 @@
-extern "C" {
-#include "../../Client/src/utils.h"
-#include "../../ConfigTool/include/utils.h"
-#include "../../ConfigTool/include/common.h"
-}
+#include "../../Client/src/utils.hpp"
+#include "../../ConfigTool/include/utils.hpp"
+#include "../../ConfigTool/include/common.hpp"
 #include <dirent.h>
 #include <mysql/mysql.h>
 #include <netinet/in.h>
@@ -13,6 +11,15 @@ extern "C" {
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+u_int8_t sCheckFileExist(const char *file_name) {
+  if (access(file_name, F_OK) != -1) {
+    printf("[ OK ]    File exists %s\n", file_name);
+    return 1;
+  } else {
+    printf("[ ERROR ] File doesn't exist %s\n", file_name);
+    return 0;
+  }
+}
 struct scftp_data data;
 struct HandleConnectionArgs {
   int sockFd;
@@ -102,7 +109,7 @@ void *handle_connection(void *Args) {
       strcpy(tmpStr, data.ROOT);
       strcat(tmpStr, "/");
       strcat(tmpStr, buffer);
-      if (CheckFileExist(&tmpStr) == 1) {
+      if (sCheckFileExist(tmpStr) == 1) {
         strcpy(buffer, "EXIST");
         send(hArgs->sockFd, buffer, hArgs->bufferSize, 0);
         // send that file
@@ -117,11 +124,11 @@ void *handle_connection(void *Args) {
   free(buffer);
 }
 
-void HanldleThreads(int sockFd, int bufferSize){
+void HanldleThreads(int sockFd, int bufferSize) {
   HandleConnectionArgs args;
   args.sockFd = sockFd;
   args.bufferSize = bufferSize;
-  handle_connection((void*)&args);
+  handle_connection((void *)&args);
 }
 uint8_t validateCredentials(char *credentials) {
   char username[128];

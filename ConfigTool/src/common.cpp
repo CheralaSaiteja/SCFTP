@@ -1,4 +1,4 @@
-#include "../include/common.h"
+#include "../include/common.hpp"
 #include <unistd.h>
 #include <dirent.h>
 

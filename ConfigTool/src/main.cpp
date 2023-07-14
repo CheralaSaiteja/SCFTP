@@ -6,8 +6,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "common.h"
-#include "utils.h"
+#include "common.hpp"
+#include "utils.hpp"
 
 u_int8_t IsPortAvailable(int port) {
   int socket_fd = socket(AF_INET, SOCK_STREAM, 0);

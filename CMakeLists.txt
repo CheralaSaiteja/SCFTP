@@ -13,15 +13,15 @@ add_subdirectory(deps/cJSON)
 
 # server src
 file(GLOB SERVER_SRC 
-    ConfigTool/src/common.c
-    ConfigTool/src/utils.c
-    Client/src/utils.c
+    ConfigTool/src/common.cpp
+    ConfigTool/src/utils.cpp
+    Client/src/utils.cpp
     Server/src/*.c 
     Server/src/*.cpp )
 
 # client src
 file(GLOB CLIENT_SRC 
-    ConfigTool/src/utils.c
+    ConfigTool/src/utils.cpp
     Client/src/*.c 
     Client/src/*.cpp)
 

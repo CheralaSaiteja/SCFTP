@@ -1,17 +1,28 @@
-#include "Core.h"
-#include "utils.h"
+#include "Core.hpp"
+#include "utils.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "../../ConfigTool/include/utils.h"
+#include "../../ConfigTool/include/utils.hpp"
 
 char *username = NULL;
 char *password = NULL;
 char *address = NULL;
 int port = 0;
+
+#include <unistd.h>
+u_int8_t cCheckFileExist(const char *file_name) {
+  if (access(file_name, F_OK) != -1) {
+    printf("[ OK ]    File exists %s\n", file_name);
+    return 1;
+  } else {
+    printf("[ ERROR ] File doesn't exist %s\n", file_name);
+    return 0;
+  }
+}
 
 void checkCredentials(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
@@ -100,7 +111,7 @@ int main(int argc, char **argv) {
       return -1;
     }
     if (address == NULL) {
-      address = malloc(sizeof(char) * 16);
+      address = (char*)malloc(sizeof(char) * 16);
       strcpy(address, "127.0.0.1");
       fprintf(stdout, "Address is not specified, taking localhost: %s\n",
               address);
@@ -144,7 +155,7 @@ int main(int argc, char **argv) {
 
   if (AUTH_OK) {
     { // allocate mempry for commandbuffer
-      commandBuffer = malloc(sizeof(char) * Buffer_size);
+      commandBuffer = (char*)malloc(sizeof(char) * Buffer_size);
       printf("Authentication %d\n", AUTH_OK);
       printf("Config Data from server\nEncryption level :%d\nBuffer size :%d\n",
              Encryption_level, Buffer_size);
@@ -161,8 +172,6 @@ int main(int argc, char **argv) {
         send(sockfd, commandBuffer, Buffer_size, 0);
         read(sockfd, commandBuffer, Buffer_size);
 
-        // print raw buffer
-        printf("%s\n", commandBuffer);
         // split buffer and show on CLI
         char *token;
         token = strtok(commandBuffer, " ");
@@ -225,7 +234,7 @@ int main(int argc, char **argv) {
             send(sockfd, commandBuffer, Buffer_size, 0);
             // check file exist
 
-            if (CheckFileExist(tokens[1]) == 1) {
+            if (cCheckFileExist(tokens[1]) == 1) {
               strcpy(commandBuffer, "EXIST");
               send(sockfd, commandBuffer, Buffer_size, 0);
               sendFile(sockfd, tokens[1], commandBuffer, Buffer_size);
