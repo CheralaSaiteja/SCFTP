@@ -3,6 +3,7 @@
 #include "../../ConfigTool/include/utils.h"
 #include <bits/pthreadtypes.h>
 #include <dirent.h>
+#include <mysql/mysql.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -11,7 +12,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <mariadb/mysql.h>
 struct scftp_data data;
 
 // create
@@ -162,10 +162,13 @@ uint8_t validateCredentials(char *credentials) {
     //                     "AND password = 'your_password';";
     char query[1024];
     strcpy(query, "SELECT * FROM users WHERE username = '");
-    strcpy(query, username);
-    strcpy(query, "' AND password = '");
-    strcpy(query, password);
-    strcpy(query, "';");
+    strcat(query, username);
+    strcat(query, "' AND password = '");
+    strcat(query, password);
+    strcat(query, "';");
+
+    printf("%s\n", query);
+
     if (mysql_query(conn, query) != 0) {
       printf("Failed to execute query: %s\n", mysql_error(conn));
       mysql_close(conn);
@@ -179,7 +182,7 @@ uint8_t validateCredentials(char *credentials) {
       return -1;
     }
     exist = mysql_num_rows(result);
-    if (exit > 1) {
+    if (exist > 0) {
       printf("User exists with the provided credentials.\n");
     } else {
       printf("User does not exist or the credentials are incorrect.\n");
@@ -225,7 +228,7 @@ int main(int argc, char **argv) {
     memset(authBuffer, '\0', 512);
     // credentials
     read(newSock_fd, authBuffer, 512);
-    if (validateCredentials(authBuffer) > 1) {
+    if (validateCredentials(authBuffer) > 0) {
       fprintf(stdout,
               "User authentication: SUCCESS. Establishing a connection.\n");
       strcpy(authBuffer, "AUTH_OK");

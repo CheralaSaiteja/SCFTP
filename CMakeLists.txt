@@ -51,7 +51,7 @@ target_include_directories(ConfigTool PUBLIC ${CONFIGTOOL_INC} deps/cJSON/)
 target_include_directories(UserMan PUBLIC ${USERMAN_INC})
 
 # link libraries
-target_link_libraries(Server PUBLIC cjson pthread mysqlcppconn mariadbclient)
+target_link_libraries(Server PUBLIC cjson pthread  mysqlclient)
 # target_link_libraries(Client PUBLIC ${CLIENT_INC})
 target_link_libraries(ConfigTool PUBLIC cjson) 
-target_link_libraries(UserMan PUBLIC mysqlcppconn mariadbclient)
+target_link_libraries(UserMan PUBLIC  mysqlclient)

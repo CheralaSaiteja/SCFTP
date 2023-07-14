@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if (!mysql_real_connect(conn, "localhost", "root", "Teja@123", "scftp", 0,
+  if (!mysql_real_connect(conn, "localhost", argv[1], argv[2], "scftp", 0,
                           NULL, 0)) {
     printf("Error connectig to database: %s\n", mysql_error(conn));
     mysql_close(conn);
