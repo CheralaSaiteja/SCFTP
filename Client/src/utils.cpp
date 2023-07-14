@@ -49,7 +49,7 @@ void sendFile(int sockfd, char *filename, char *buf, int buf_size) {
   // Open the file for reading
   file = fopen(filename, "rb");
   if (file == NULL) {
-    perror("Error opening file");
+    perror("[ERROR] opening file");
     return;
   }
 
@@ -80,7 +80,7 @@ void sendFile(int sockfd, char *filename, char *buf, int buf_size) {
   }
 
   fclose(file);
-  printf("File sent successfully.\n");
+  printf("[OK] File sent successfully.\n");
 }
 void recvFile(int sock_fd, char *root, char *buf, int buf_size) {
   FILE *file;
@@ -95,17 +95,18 @@ void recvFile(int sock_fd, char *root, char *buf, int buf_size) {
     strcpy(tStr, root);
     strcat(tStr, "/");
     strcat(tStr, buf);
-    tStr[strlen(tStr) - 1] = '\0';
-    printf("%s\t%s\n", buf, tStr);
+    if (tStr[strlen(tStr) - 1] == '1') {
+      tStr[strlen(tStr) - 1] = '\0';
+    }
     file = fopen(tStr, "wb");
     if (file == NULL) {
-      perror("Error opening file");
+      perror("[ERROR] opening file");
       return;
     }
   } else {
     file = fopen(buf, "wb");
     if (file == NULL) {
-      perror("Error opening file");
+      perror("[ERROR] opening file");
       return;
     }
   }
@@ -116,7 +117,7 @@ void recvFile(int sock_fd, char *root, char *buf, int buf_size) {
   recv(sock_fd, buf, buf_size, 0);
 
   int pCount = atoi(buf);
-  printf("packaet size: %d\n", pCount);
+  printf("[---] packet size: %d\n", pCount);
   for (int i = 0; i < pCount; i++) {
     memset(buf, 0, buf_size);
     recv(sock_fd, buf, buf_size, 0);
@@ -127,5 +128,5 @@ void recvFile(int sock_fd, char *root, char *buf, int buf_size) {
     free(tStr);
   }
   fclose(file);
-  printf("File received successfully.\n");
+  printf("[SUCCESS] File received successfully.\n");
 }

@@ -33,14 +33,14 @@ int create_connection(const char *address, int port, struct sockaddr_in addr) {
   int opt = 1;
   // Creating socket file descriptor
   if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    perror("socket failed");
+    perror("[ERROR] socket failed");
     exit(EXIT_FAILURE);
   }
 
   // Forcefully attaching socket to the port 8080
   if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                  sizeof(opt))) {
-    perror("setsockopt");
+    perror("[ERROR] setsockopt");
     exit(EXIT_FAILURE);
   }
   addr.sin_family = AF_INET;
@@ -49,7 +49,7 @@ int create_connection(const char *address, int port, struct sockaddr_in addr) {
 
   // Forcefully attaching socket to the port 8080
   if (bind(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    perror("bind failed");
+    perror("[ERROR] bind failed");
     exit(EXIT_FAILURE);
   }
   return sock_fd;
@@ -63,7 +63,7 @@ void listFiles(char *buffer) {
   struct dirent *entry;
   dir = opendir(data.ROOT);
   if (dir == NULL) {
-    printf("failed to list of files(command list files)\n");
+    printf("[ERROR] failed to list of files(command list files)\n");
     return;
   }
   memset(buffer, '\0', data.BUFFER_SIZE * 512);
@@ -85,14 +85,12 @@ void *handle_connection(void *Args) {
 
     if (strcmp(buffer, "exit") == 0) {
       close_connection(hArgs->sockFd);
-      printf("Closed a connection\n");
+      printf("[---] Closed a connection\n");
       break;
     }
 
     if (strcmp(buffer, "ls") == 0) {
-      printf("Command : ls\n");
       listFiles(buffer);
-      // printf("%s\n", buffer);
       send(hArgs->sockFd, buffer, hArgs->bufferSize, 0);
     }
     if (strcmp(buffer, "pushFile") == 0) {
@@ -181,21 +179,17 @@ uint8_t validateCredentials(char *credentials) {
 
     conn = mysql_init(NULL);
     if (conn == NULL) {
-      printf("Failed to initialize MySQL connection.\n");
+      printf("[ERROR] Failed to initialize MySQL connection.\n");
       return 1;
     }
 
     if (mysql_real_connect(conn, "localhost", "root", "Teja@123", "scftp", 0,
                            NULL, 0) == NULL) {
-      printf("Failed to connect to the database: %s\n", mysql_error(conn));
+      printf("[ERROR] Failed to connect to the database: %s\n", mysql_error(conn));
       mysql_close(conn);
       return -1;
     }
 
-    // const char *query = "SELECT * FROM users WHERE username =
-    // 'your_username'
-    // "
-    //                     "AND password = 'your_password';";
     char query[1024];
     strcpy(query, "SELECT * FROM users WHERE username = '");
     strcat(query, username);
@@ -204,22 +198,22 @@ uint8_t validateCredentials(char *credentials) {
     strcat(query, "';");
 
     if (mysql_query(conn, query) != 0) {
-      printf("Failed to execute query: %s\n", mysql_error(conn));
+      printf("[ERROR] Failed to execute query: %s\n", mysql_error(conn));
       mysql_close(conn);
       return -1;
     }
 
     result = mysql_store_result(conn);
     if (result == NULL) {
-      printf("Failed to retrieve result set: %s\n", mysql_error(conn));
+      printf("[ERROR] Failed to retrieve result set: %s\n", mysql_error(conn));
       mysql_close(conn);
       return -1;
     }
     exist = mysql_num_rows(result);
     if (exist > 0) {
-      printf("User exists with the provided credentials.\n");
+      printf("[---] User exists with the provided credentials.\n");
     } else {
-      printf("User does not exist or the credentials are incorrect.\n");
+      printf("[---] User does not exist or the credentials are incorrect.\n");
     }
 
     mysql_free_result(result);
@@ -247,7 +241,7 @@ int main(int argc, char **argv) {
   sock_addr_len = sizeof(sock_addr);
 
   if (listen(sock_fd, sock_addr_len) < 0) {
-    perror("listen failed");
+    perror("[ERROR] listen failed");
     exit(EXIT_FAILURE);
   }
   while (1) {
@@ -261,7 +255,7 @@ int main(int argc, char **argv) {
     read(newSock_fd, authBuffer, 512);
     if (validateCredentials(authBuffer) > 0) {
       fprintf(stdout,
-              "User authentication: SUCCESS. Establishing a connection.\n");
+              "[---] User authentication: SUCCESS. Establishing a connection.\n");
       strcpy(authBuffer, "AUTH_OK");
       send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
 
@@ -275,7 +269,7 @@ int main(int argc, char **argv) {
       }
       HanldleThreads(newSock_fd, data.BUFFER_SIZE * 512);
     } else {
-      fprintf(stdout, "User authenticate : FAILED\n");
+      fprintf(stdout, "[---] User authenticate : FAILED\n");
       strcpy(authBuffer, "AUTH_FAIL");
       send(newSock_fd, authBuffer, sizeof(authBuffer), 0);
     }
